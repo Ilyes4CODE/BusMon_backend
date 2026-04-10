@@ -70,10 +70,13 @@ ASGI_APPLICATION = 'config.asgi.application'
 
 CHANNEL_LAYERS = {
     'default': {
-        'BACKEND': 'channels.layers.InMemoryChannelLayer',
-        # For production, use Redis:
-        # 'BACKEND': 'channels_redis.core.RedisChannelLayer',
-        # 'CONFIG': {'hosts': [('127.0.0.1', 6379)]},
+        #'BACKEND': 'channels.layers.InMemoryChannelLayer',
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [
+                "rediss://:gQAAAAAAAXDlAAIncDI5NjM2NjYzNzA1MTg0YmQ2OWFkZDhhZjE4ZTQyNThhZHAyOTQ0Mzc@awaited-ghost-94437.upstash.io:6379"
+            ],
+        },
     },
 }
 
