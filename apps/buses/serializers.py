@@ -62,12 +62,29 @@ class BusStatusSerializer(serializers.ModelSerializer):
 
 class BusListSerializer(serializers.ModelSerializer):
     driver_name = serializers.SerializerMethodField()
+    active_trip = serializers.SerializerMethodField()
 
     class Meta:
         model  = Bus
         fields = ['id', 'plate_number', 'brand', 'model', 'capacity', 'year',
                   'status', 'driver_id', 'driver_name',
-                  'latitude', 'longitude', 'last_location_update']
+                  'latitude', 'longitude', 'last_location_update', 'active_trip']
 
     def get_driver_name(self, obj):
         return obj.driver.get_full_name() if obj.driver else None
+
+    def get_active_trip(self, obj):
+        # Uses prefetch cache from AllBusLocationsView when available.
+        trips = getattr(obj, 'map_relevant_trips', None)
+        trip = trips[0] if trips else None
+        if not trip:
+            return None
+        return {
+            'id': trip.id,
+            'route_id': trip.route_id,
+            'route_name': trip.route.name,
+            'departure_time': trip.departure_time,
+            'arrival_time': trip.arrival_time,
+            'status': trip.status,
+            'delay_minutes': trip.delay_minutes,
+        }

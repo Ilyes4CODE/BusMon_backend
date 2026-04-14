@@ -6,7 +6,7 @@ from django.urls import path
 from .views import (
     RouteListCreateView, RouteDetailView,
     TripListCreateView, TripDetailView,
-    TripStatusUpdateView, DriverScheduleView,
+    TripStatusUpdateView, DriverScheduleView, MyTripsView,
 )
 
 urlpatterns = [
@@ -21,4 +21,5 @@ urlpatterns = [
 
     # Driver schedule
     path('schedule/',                DriverScheduleView.as_view(),  name='driver-schedule'),
+    path('my-trips/',                MyTripsView.as_view(),         name='my-trips'),
 ]

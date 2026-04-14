@@ -48,18 +48,22 @@ class TripListCreateView(generics.ListCreateAPIView):
 
         # Driver sees only his own trips
         if user.is_driver:
-            return qs.filter(driver=user)
+            qs = qs.filter(driver=user)
 
         # Filters
         driver_id = self.request.query_params.get('driver_id')
         bus_id    = self.request.query_params.get('bus_id')
         date      = self.request.query_params.get('date')   # format: YYYY-MM-DD
         status_f  = self.request.query_params.get('status')
+        start_at  = self.request.query_params.get('start_at')  # ISO datetime
+        end_at    = self.request.query_params.get('end_at')    # ISO datetime
 
         if driver_id: qs = qs.filter(driver_id=driver_id)
         if bus_id:    qs = qs.filter(bus_id=bus_id)
         if date:      qs = qs.filter(departure_time__date=date)
         if status_f:  qs = qs.filter(status=status_f)
+        if start_at:  qs = qs.filter(departure_time__gte=start_at)
+        if end_at:    qs = qs.filter(departure_time__lte=end_at)
 
         return qs
 
@@ -126,3 +130,49 @@ class DriverScheduleView(APIView):
             return Response({'error': 'Accès refusé.'}, status=status.HTTP_403_FORBIDDEN)
 
         return Response(TripSerializer(trips, many=True).data)
+
+
+class MyTripsView(APIView):
+    """
+    GET /api/routes/my-trips/
+    Drivers get only their trips with optional filtering:
+      - ?scope=today|upcoming|all (default=today)
+      - ?date=YYYY-MM-DD
+    Admins can inspect a driver timeline via:
+      - ?driver_id=X
+      - ?start_at=ISO_DATETIME
+      - ?end_at=ISO_DATETIME
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        qs = Trip.objects.select_related('route', 'bus', 'driver')
+        scope = request.query_params.get('scope', 'today')
+        date = request.query_params.get('date')
+        start_at = request.query_params.get('start_at')
+        end_at = request.query_params.get('end_at')
+        driver_id = request.query_params.get('driver_id')
+        now = timezone.now()
+
+        if user.is_driver:
+            qs = qs.filter(driver=user)
+        elif user.is_admin:
+            if driver_id:
+                qs = qs.filter(driver_id=driver_id)
+        else:
+            return Response({'error': 'Accès refusé.'}, status=status.HTTP_403_FORBIDDEN)
+
+        if date:
+            qs = qs.filter(departure_time__date=date)
+        elif scope == 'today':
+            qs = qs.filter(departure_time__date=now.date())
+        elif scope == 'upcoming':
+            qs = qs.filter(departure_time__gte=now)
+
+        if start_at:
+            qs = qs.filter(departure_time__gte=start_at)
+        if end_at:
+            qs = qs.filter(departure_time__lte=end_at)
+
+        return Response(TripSerializer(qs, many=True).data)

@@ -1,10 +1,12 @@
 from django.utils import timezone
+from django.db.models import Prefetch
 from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 
 from apps.accounts.permissions import IsAdmin, IsAdminOrReadOnly, IsAdminOrDriver
+from apps.routes.models import Trip
 from .models import Bus
 from .serializers import BusSerializer, BusLocationSerializer, BusStatusSerializer, BusListSerializer
 
@@ -194,7 +196,16 @@ class AllBusLocationsView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        buses = Bus.objects.filter(is_active=True).select_related('driver').exclude(latitude=None)
+        trips_prefetch = Prefetch(
+            'trips',
+            queryset=Trip.objects.select_related('route').filter(
+                status__in=[Trip.Status.SCHEDULED, Trip.Status.IN_PROGRESS, Trip.Status.DELAYED]
+            ).order_by('departure_time'),
+            to_attr='map_relevant_trips',
+        )
+        buses = Bus.objects.filter(is_active=True).select_related('driver').prefetch_related(
+            trips_prefetch
+        ).exclude(latitude=None)
         return Response(BusListSerializer(buses, many=True).data)
 
 
