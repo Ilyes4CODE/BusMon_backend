@@ -28,8 +28,10 @@ class RouteWriteSerializer(serializers.ModelSerializer):
 
     class Meta:
         model  = Route
-        fields = ['name', 'origin', 'destination',
+        # Include id so create/update responses return the route primary key (needed by clients linking trips).
+        fields = ['id', 'name', 'origin', 'destination',
                   'distance_km', 'duration_min', 'is_active', 'stops']
+        read_only_fields = ['id']
 
     def create(self, validated_data):
         stops_data = validated_data.pop('stops', [])
