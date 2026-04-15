@@ -38,7 +38,7 @@ class RouteDetailView(generics.RetrieveUpdateDestroyAPIView):
 # ── Trips ────────────────────────────────────────────────────
 
 class TripListCreateView(generics.ListCreateAPIView):
-    queryset           = Trip.objects.select_related('route', 'bus', 'driver')
+    queryset           = Trip.objects.select_related('route', 'bus', 'driver').prefetch_related('route__stops')
     serializer_class   = TripSerializer
     permission_classes = [IsAdminOrReadOnly]
 
@@ -69,7 +69,7 @@ class TripListCreateView(generics.ListCreateAPIView):
 
 
 class TripDetailView(generics.RetrieveUpdateDestroyAPIView):
-    queryset           = Trip.objects.select_related('route', 'bus', 'driver')
+    queryset           = Trip.objects.select_related('route', 'bus', 'driver').prefetch_related('route__stops')
     serializer_class   = TripSerializer
     permission_classes = [IsAdminOrReadOnly]
 
@@ -90,9 +90,13 @@ class TripStatusUpdateView(APIView):
 
     def patch(self, request, pk):
         try:
-            trip = Trip.objects.get(pk=pk)
+            trip = Trip.objects.select_related('driver').get(pk=pk)
         except Trip.DoesNotExist:
             return Response({'error': 'Rotation introuvable.'}, status=status.HTTP_404_NOT_FOUND)
+
+        user = request.user
+        if user.is_driver and trip.driver_id != user.id:
+            return Response({'error': 'Vous ne pouvez modifier que vos propres trajets.'}, status=status.HTTP_403_FORBIDDEN)
 
         new_status = request.data.get('status')
         if not new_status:
@@ -130,9 +134,13 @@ class DriverScheduleView(APIView):
         driver_id = request.query_params.get('driver_id')
 
         if user.is_admin and driver_id:
-            trips = Trip.objects.filter(driver_id=driver_id, departure_time__date=today)
+            trips = Trip.objects.filter(driver_id=driver_id, departure_time__date=today).select_related(
+                'route', 'bus', 'driver'
+            ).prefetch_related('route__stops')
         elif user.is_driver:
-            trips = Trip.objects.filter(driver=user, departure_time__date=today)
+            trips = Trip.objects.filter(driver=user, departure_time__date=today).select_related(
+                'route', 'bus', 'driver'
+            ).prefetch_related('route__stops')
         else:
             return Response({'error': 'Accès refusé.'}, status=status.HTTP_403_FORBIDDEN)
 
@@ -154,7 +162,7 @@ class MyTripsView(APIView):
 
     def get(self, request):
         user = request.user
-        qs = Trip.objects.select_related('route', 'bus', 'driver')
+        qs = Trip.objects.select_related('route', 'bus', 'driver').prefetch_related('route__stops')
         scope = request.query_params.get('scope', 'today')
         date = request.query_params.get('date')
         start_at = request.query_params.get('start_at')

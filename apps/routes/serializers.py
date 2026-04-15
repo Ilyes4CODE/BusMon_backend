@@ -57,11 +57,12 @@ class TripSerializer(serializers.ModelSerializer):
     bus_plate    = serializers.CharField(source='bus.plate_number',       read_only=True)
     driver_name  = serializers.CharField(source='driver.get_full_name',   read_only=True)
     status_label = serializers.CharField(source='get_status_display',     read_only=True)
+    route_stops  = StopSerializer(source='route.stops', many=True, read_only=True)
 
     class Meta:
         model  = Trip
         fields = [
-            'id', 'route', 'route_name', 'bus', 'bus_plate',
+            'id', 'route', 'route_name', 'route_stops', 'bus', 'bus_plate',
             'driver', 'driver_name', 'departure_time', 'arrival_time',
             'status', 'status_label', 'delay_minutes', 'notes', 'created_at',
         ]
