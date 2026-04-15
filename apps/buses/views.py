@@ -193,7 +193,7 @@ class BusStatusUpdateView(APIView):
 
 class AllBusLocationsView(APIView):
     """GET /api/buses/locations/ — all active buses with GPS."""
-    permission_classes = [IsAdminOrDriver]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
         trips_prefetch = Prefetch(

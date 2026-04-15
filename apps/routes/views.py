@@ -40,7 +40,7 @@ class RouteDetailView(generics.RetrieveUpdateDestroyAPIView):
 class TripListCreateView(generics.ListCreateAPIView):
     queryset           = Trip.objects.select_related('route', 'bus', 'driver')
     serializer_class   = TripSerializer
-    permission_classes = [IsAdminOrDriver]
+    permission_classes = [IsAdminOrReadOnly]
 
     def get_queryset(self):
         qs     = super().get_queryset()
@@ -49,8 +49,6 @@ class TripListCreateView(generics.ListCreateAPIView):
         # Driver sees only his own trips
         if user.is_driver:
             qs = qs.filter(driver=user)
-        elif not user.is_admin:
-            return qs.none()
 
         # Filters
         driver_id = self.request.query_params.get('driver_id')
@@ -73,16 +71,14 @@ class TripListCreateView(generics.ListCreateAPIView):
 class TripDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset           = Trip.objects.select_related('route', 'bus', 'driver')
     serializer_class   = TripSerializer
-    permission_classes = [IsAdminOrDriver]
+    permission_classes = [IsAdminOrReadOnly]
 
     def get_queryset(self):
         qs = super().get_queryset()
         user = self.request.user
         if user.is_driver:
             return qs.filter(driver=user)
-        if user.is_admin:
-            return qs
-        return qs.none()
+        return qs
 
 
 class TripStatusUpdateView(APIView):
