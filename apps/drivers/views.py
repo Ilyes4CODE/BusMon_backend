@@ -1,7 +1,6 @@
 from rest_framework import serializers, generics, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.permissions import AllowAny
 from apps.accounts.models import User
 from apps.accounts.serializers import UserSerializer
 from apps.accounts.permissions import IsAdmin
@@ -37,7 +36,7 @@ class CreateDriverView(APIView):
     POST /api/drivers/create/
     Creates a User with role=driver AND their DriverProfile in one call.
     """
-    permission_classes = [AllowAny]
+    permission_classes = [IsAdmin]
  
     def post(self, request):
         from apps.accounts.serializers import RegisterSerializer

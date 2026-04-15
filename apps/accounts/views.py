@@ -6,7 +6,12 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from .models import User
-from .serializers import RegisterSerializer, UserSerializer, ChangePasswordSerializer
+from .serializers import (
+    RegisterSerializer,
+    UserSerializer,
+    ProfileSerializer,
+    ChangePasswordSerializer,
+)
 from .permissions import IsAdmin
 
 
@@ -52,7 +57,7 @@ class LogoutView(APIView):
             return Response({'error': 'Token invalide.'}, status=status.HTTP_400_BAD_REQUEST)
 
 class ProfileView(generics.RetrieveUpdateAPIView):
-    serializer_class   = UserSerializer
+    serializer_class   = ProfileSerializer
     permission_classes = [IsAuthenticated]
 
     def get_object(self):

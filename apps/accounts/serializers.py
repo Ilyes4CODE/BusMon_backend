@@ -52,6 +52,21 @@ class UserSerializer(serializers.ModelSerializer):
         return obj.get_full_name()
 
 
+class ProfileSerializer(serializers.ModelSerializer):
+    full_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = [
+            'id', 'email', 'username', 'first_name', 'last_name',
+            'full_name', 'phone', 'role', 'avatar', 'is_active', 'created_at',
+        ]
+        read_only_fields = ['id', 'email', 'role', 'is_active', 'created_at']
+
+    def get_full_name(self, obj):
+        return obj.get_full_name()
+
+
 class ChangePasswordSerializer(serializers.Serializer):
     old_password = serializers.CharField(required=True)
     new_password = serializers.CharField(required=True, validators=[validate_password])
