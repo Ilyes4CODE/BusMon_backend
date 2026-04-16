@@ -6,6 +6,7 @@ from django.urls import path
 from .views import (
     DriverListView, DriverDetailView, CreateDriverView,
     AbsenceListCreateView, AbsenceDetailView,
+    AbsenceHistoryListView, AbsenceHistoryDetailView,
 )
 
 urlpatterns = [
@@ -16,4 +17,7 @@ urlpatterns = [
     # Absences
     path('absences/',            AbsenceListCreateView.as_view(), name='absence-list'),
     path('absences/<int:pk>/',   AbsenceDetailView.as_view(),     name='absence-detail'),
+
+    path('absence-history/',           AbsenceHistoryListView.as_view(),   name='absence-history-list'),
+    path('absence-history/<int:pk>/', AbsenceHistoryDetailView.as_view(), name='absence-history-detail'),
 ]

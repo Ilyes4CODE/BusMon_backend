@@ -1,5 +1,6 @@
 from django.contrib import admin
-from .models import DriverProfile, Absence
+
+from .models import Absence, AbsenceHistory, DriverProfile
 
 @admin.register(DriverProfile)
 class DriverProfileAdmin(admin.ModelAdmin):
@@ -15,3 +16,12 @@ class AbsenceAdmin(admin.ModelAdmin):
     list_filter   = ['type']
     search_fields = ['driver__first_name', 'driver__last_name']
     ordering      = ['-start_date']
+
+
+@admin.register(AbsenceHistory)
+class AbsenceHistoryAdmin(admin.ModelAdmin):
+    list_display  = ['driver', 'date', 'status', 'auto_generated', 'updated_at']
+    list_filter   = ['status', 'date']
+    search_fields = ['driver__first_name', 'driver__last_name']
+    ordering      = ['-date']
+    raw_id_fields = ['driver']

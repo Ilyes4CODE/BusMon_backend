@@ -4,8 +4,13 @@ from rest_framework.views import APIView
 from apps.accounts.models import User
 from apps.accounts.serializers import UserSerializer
 from apps.accounts.permissions import IsAdmin
-from .models import DriverProfile, Absence
-from .serializers import *
+from .models import Absence, AbsenceHistory, DriverProfile
+from .serializers import (
+    AbsenceHistorySerializer,
+    AbsenceSerializer,
+    DriverProfileSerializer,
+    DriverProfileWriteSerializer,
+)
 
 class DriverListView(generics.ListAPIView):
     """GET /api/drivers/ — list all drivers with their profiles."""
@@ -87,4 +92,27 @@ class AbsenceDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset           = Absence.objects.all()
     serializer_class   = AbsenceSerializer
     permission_classes = [IsAdmin]
- 
+
+
+class AbsenceHistoryListView(generics.ListAPIView):
+    """GET /api/drivers/absence-history/ — daily absence log (all drivers)."""
+
+    serializer_class   = AbsenceHistorySerializer
+    permission_classes = [IsAdmin]
+
+    def get_queryset(self):
+        qs = AbsenceHistory.objects.select_related('driver').order_by('-date', 'driver__last_name')
+        driver_id = self.request.query_params.get('driver_id')
+        month = self.request.query_params.get('month')  # YYYY-MM
+        if driver_id:
+            qs = qs.filter(driver_id=driver_id)
+        if month:
+            year, m = month.split('-')
+            qs = qs.filter(date__year=year, date__month=m)
+        return qs
+
+
+class AbsenceHistoryDetailView(generics.RetrieveUpdateAPIView):
+    queryset           = AbsenceHistory.objects.select_related('driver')
+    serializer_class   = AbsenceHistorySerializer
+    permission_classes = [IsAdmin]

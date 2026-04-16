@@ -2,6 +2,7 @@
 routes/views.py
 """
 
+from django.db.models import Q
 from django.utils import timezone
 from rest_framework import generics, status
 from rest_framework.response import Response
@@ -38,7 +39,9 @@ class RouteDetailView(generics.RetrieveUpdateDestroyAPIView):
 # ── Trips ────────────────────────────────────────────────────
 
 class TripListCreateView(generics.ListCreateAPIView):
-    queryset           = Trip.objects.select_related('route', 'bus', 'driver').prefetch_related('route__stops')
+    queryset           = Trip.objects.select_related(
+        'route', 'bus', 'driver', 'second_driver',
+    ).prefetch_related('route__stops')
     serializer_class   = TripSerializer
     permission_classes = [IsAdminOrReadOnly]
 
@@ -46,9 +49,9 @@ class TripListCreateView(generics.ListCreateAPIView):
         qs     = super().get_queryset()
         user   = self.request.user
 
-        # Driver sees only his own trips
+        # Driver sees trips where they are primary or second driver
         if user.is_driver:
-            qs = qs.filter(driver=user)
+            qs = qs.filter(Q(driver=user) | Q(second_driver=user))
 
         # Filters
         driver_id = self.request.query_params.get('driver_id')
@@ -69,7 +72,9 @@ class TripListCreateView(generics.ListCreateAPIView):
 
 
 class TripDetailView(generics.RetrieveUpdateDestroyAPIView):
-    queryset           = Trip.objects.select_related('route', 'bus', 'driver').prefetch_related('route__stops')
+    queryset           = Trip.objects.select_related(
+        'route', 'bus', 'driver', 'second_driver',
+    ).prefetch_related('route__stops')
     serializer_class   = TripSerializer
     permission_classes = [IsAdminOrReadOnly]
 
@@ -77,7 +82,7 @@ class TripDetailView(generics.RetrieveUpdateDestroyAPIView):
         qs = super().get_queryset()
         user = self.request.user
         if user.is_driver:
-            return qs.filter(driver=user)
+            return qs.filter(Q(driver=user) | Q(second_driver=user))
         return qs
 
 
@@ -90,12 +95,12 @@ class TripStatusUpdateView(APIView):
 
     def patch(self, request, pk):
         try:
-            trip = Trip.objects.select_related('driver').get(pk=pk)
+            trip = Trip.objects.select_related('driver', 'second_driver', 'bus').get(pk=pk)
         except Trip.DoesNotExist:
             return Response({'error': 'Rotation introuvable.'}, status=status.HTTP_404_NOT_FOUND)
 
         user = request.user
-        if user.is_driver and trip.driver_id != user.id:
+        if user.is_driver and trip.driver_id != user.id and trip.second_driver_id != user.id:
             return Response({'error': 'Vous ne pouvez modifier que vos propres trajets.'}, status=status.HTTP_403_FORBIDDEN)
 
         new_status = request.data.get('status')
@@ -135,11 +140,14 @@ class DriverScheduleView(APIView):
 
         if user.is_admin and driver_id:
             trips = Trip.objects.filter(driver_id=driver_id, departure_time__date=today).select_related(
-                'route', 'bus', 'driver'
+                'route', 'bus', 'driver', 'second_driver'
             ).prefetch_related('route__stops')
         elif user.is_driver:
-            trips = Trip.objects.filter(driver=user, departure_time__date=today).select_related(
-                'route', 'bus', 'driver'
+            trips = Trip.objects.filter(
+                Q(driver=user) | Q(second_driver=user),
+                departure_time__date=today,
+            ).select_related(
+                'route', 'bus', 'driver', 'second_driver'
             ).prefetch_related('route__stops')
         else:
             return Response({'error': 'Accès refusé.'}, status=status.HTTP_403_FORBIDDEN)
@@ -162,7 +170,7 @@ class MyTripsView(APIView):
 
     def get(self, request):
         user = request.user
-        qs = Trip.objects.select_related('route', 'bus', 'driver').prefetch_related('route__stops')
+        qs = Trip.objects.select_related('route', 'bus', 'driver', 'second_driver').prefetch_related('route__stops')
         scope = request.query_params.get('scope', 'today')
         date = request.query_params.get('date')
         start_at = request.query_params.get('start_at')
@@ -171,7 +179,7 @@ class MyTripsView(APIView):
         now = timezone.now()
 
         if user.is_driver:
-            qs = qs.filter(driver=user)
+            qs = qs.filter(Q(driver=user) | Q(second_driver=user))
         elif user.is_admin:
             if driver_id:
                 qs = qs.filter(driver_id=driver_id)

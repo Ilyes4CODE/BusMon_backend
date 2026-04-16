@@ -59,6 +59,15 @@ class Trip(models.Model):
                                     null=True, blank=True)
     driver      = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True,
                                     related_name='trips', limit_choices_to={'role': 'driver'})
+    second_driver = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='trips_as_second_driver',
+        limit_choices_to={'role': 'driver'},
+        verbose_name='Second driver (>600 km)',
+    )
     departure_time = models.DateTimeField(verbose_name='Heure de départ')
     arrival_time   = models.DateTimeField(null=True, blank=True, verbose_name='Heure d\'arrivée')
     status      = models.CharField(max_length=15, choices=Status.choices,

@@ -16,15 +16,6 @@ class Bus(models.Model):
     year          = models.PositiveIntegerField()
     status        = models.CharField(max_length=15, choices=Status.choices, default=Status.INACTIVE)
 
-    # Driver assignment — one bus per driver enforced via unique + null=True
-    driver        = models.OneToOneField(
-                        'accounts.User',
-                        on_delete=models.SET_NULL,
-                        null=True, blank=True,
-                        related_name='assigned_bus',
-                        limit_choices_to={'role': 'driver'},
-                    )
-
     # Real-time GPS
     latitude      = models.FloatField(null=True, blank=True)
     longitude     = models.FloatField(null=True, blank=True)
@@ -41,5 +32,4 @@ class Bus(models.Model):
         ordering            = ['plate_number']
 
     def __str__(self):
-        driver_name = self.driver.get_full_name() if self.driver else 'Unassigned'
-        return f"{self.brand} {self.model} - {self.plate_number} ({driver_name})"
+        return f"{self.brand} {self.model} - {self.plate_number}"
