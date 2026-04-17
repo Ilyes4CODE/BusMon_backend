@@ -6,7 +6,7 @@ from django.urls import path
 from .views import (
     RouteListCreateView, RouteDetailView,
     TripListCreateView, TripDetailView,
-    TripStatusUpdateView, DriverScheduleView, MyTripsView,
+    TripStatusUpdateView, DriverScheduleView, MyTripsView, AdminTripManageView,
 )
 
 urlpatterns = [
@@ -17,6 +17,7 @@ urlpatterns = [
     # Trips
     path('trips/',                   TripListCreateView.as_view(),  name='trip-list'),
     path('trips/<int:pk>/',          TripDetailView.as_view(),      name='trip-detail'),
+    path('admin/trips/<int:pk>/',    AdminTripManageView.as_view(), name='admin-trip-manage'),
     path('trips/<int:pk>/status/',   TripStatusUpdateView.as_view(),name='trip-status'),
 
     # Driver schedule

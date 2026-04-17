@@ -86,6 +86,37 @@ class TripDetailView(generics.RetrieveUpdateDestroyAPIView):
         return qs
 
 
+class AdminTripManageView(APIView):
+    """
+    PATCH /api/routes/admin/trips/{id}/
+    DELETE /api/routes/admin/trips/{id}/
+    Admin-only endpoint to modify or delete a trip.
+    """
+    permission_classes = [IsAdmin]
+
+    def patch(self, request, pk):
+        try:
+            trip = Trip.objects.select_related(
+                'route', 'bus', 'driver', 'second_driver',
+            ).prefetch_related('route__stops').get(pk=pk)
+        except Trip.DoesNotExist:
+            return Response({'error': 'Rotation introuvable.'}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = TripSerializer(trip, data=request.data, partial=True)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def delete(self, request, pk):
+        try:
+            trip = Trip.objects.get(pk=pk)
+        except Trip.DoesNotExist:
+            return Response({'error': 'Rotation introuvable.'}, status=status.HTTP_404_NOT_FOUND)
+        trip.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
 class TripStatusUpdateView(APIView):
     """
     PATCH /api/routes/trips/{id}/status/

@@ -4,14 +4,30 @@ Bus Monitoring System - Django Settings
 
 from pathlib import Path
 from datetime import timedelta
+import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-lt$#vx0$(6^h9&zl9#qdqlkn@r9*$(vw0d#khf5@(rgqf_9wjz'
+def env_bool(name: str, default: bool = False) -> bool:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {'1', 'true', 'yes', 'on'}
 
-DEBUG = True
+def env_list(name: str, default: list[str]) -> list[str]:
+    value = os.getenv(name)
+    if not value:
+        return default
+    return [item.strip() for item in value.split(',') if item.strip()]
 
-ALLOWED_HOSTS = ['*']
+SECRET_KEY = os.getenv(
+    'DJANGO_SECRET_KEY',
+    'django-insecure-lt$#vx0$(6^h9&zl9#qdqlkn@r9*$(vw0d#khf5@(rgqf_9wjz',
+)
+
+DEBUG = env_bool('DJANGO_DEBUG', True)
+
+ALLOWED_HOSTS = env_list('DJANGO_ALLOWED_HOSTS', ['*'])
 
 INSTALLED_APPS = [
     'daphne',
@@ -71,12 +87,17 @@ ASGI_APPLICATION = 'config.asgi.application'
 
 CHANNEL_LAYERS = {
     'default': {
-        #'BACKEND': 'channels.layers.InMemoryChannelLayer',
-        "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {
-            "hosts": [
-                "rediss://:gQAAAAAAAXDlAAIncDI5NjM2NjYzNzA1MTg0YmQ2OWFkZDhhZjE4ZTQyNThhZHAyOTQ0Mzc@awaited-ghost-94437.upstash.io:6379"
-            ],
+        'BACKEND': os.getenv(
+            'CHANNEL_BACKEND',
+            'channels_redis.core.RedisChannelLayer',
+        ),
+        'CONFIG': {
+            'hosts': env_list(
+                'REDIS_URLS',
+                [
+                    'rediss://:gQAAAAAAAXDlAAIncDI5NjM2NjYzNzA1MTg0YmQ2OWFkZDhhZjE4ZTQyNThhZHAyOTQ0Mzc@awaited-ghost-94437.upstash.io:6379'
+                ],
+            ),
         },
     },
 }
@@ -118,10 +139,11 @@ SIMPLE_JWT = {
     'USER_ID_CLAIM': 'user_id',
 }
 
-CORS_ALLOW_ALL_ORIGINS = True 
+CORS_ALLOW_ALL_ORIGINS = env_bool('CORS_ALLOW_ALL_ORIGINS', True)
+CORS_ALLOWED_ORIGINS = env_list('CORS_ALLOWED_ORIGINS', [])
 
-LANGUAGE_CODE = 'fr-fr'
-TIME_ZONE = 'Africa/Algiers'
+LANGUAGE_CODE = os.getenv('DJANGO_LANGUAGE_CODE', 'fr-fr')
+TIME_ZONE = os.getenv('DJANGO_TIME_ZONE', 'Africa/Algiers')
 USE_I18N = True
 USE_TZ = True
 
