@@ -7,6 +7,7 @@ from .views import (
     DriverListView, DriverDetailView, CreateDriverView,
     AbsenceListCreateView, AbsenceDetailView,
     AbsenceHistoryListView, AbsenceHistoryDetailView,
+    MarkDriverAbsentTodayView,
 )
 
 urlpatterns = [
@@ -20,4 +21,5 @@ urlpatterns = [
 
     path('absence-history/',           AbsenceHistoryListView.as_view(),   name='absence-history-list'),
     path('absence-history/<int:pk>/', AbsenceHistoryDetailView.as_view(), name='absence-history-detail'),
+    path('<int:driver_id>/mark-absent-today/', MarkDriverAbsentTodayView.as_view(), name='driver-mark-absent-today'),
 ]

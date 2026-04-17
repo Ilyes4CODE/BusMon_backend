@@ -1,6 +1,7 @@
 from rest_framework import serializers, generics, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from django.utils import timezone
 from apps.accounts.models import User
 from apps.accounts.serializers import UserSerializer
 from apps.accounts.permissions import IsAdmin
@@ -116,3 +117,41 @@ class AbsenceHistoryDetailView(generics.RetrieveUpdateAPIView):
     queryset           = AbsenceHistory.objects.select_related('driver')
     serializer_class   = AbsenceHistorySerializer
     permission_classes = [IsAdmin]
+
+
+class MarkDriverAbsentTodayView(APIView):
+    """
+    POST /api/drivers/<driver_id>/mark-absent-today/
+    Marks the driver's daily absence-history row as ABSENT for today.
+    """
+    permission_classes = [IsAdmin]
+
+    def post(self, request, driver_id):
+        user = User.objects.filter(
+            id=driver_id,
+            role=User.Role.DRIVER,
+            driver_profile__isnull=False,
+        ).first()
+        if not user:
+            return Response({'error': 'Driver not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        today = timezone.localdate()
+        notes = (request.data.get('notes') or '').strip()
+
+        row, created = AbsenceHistory.objects.get_or_create(
+            driver=user,
+            date=today,
+            defaults={
+                'status': AbsenceHistory.DayStatus.ABSENT,
+                'notes': notes,
+                'auto_generated': False,
+            },
+        )
+        if not created:
+            row.status = AbsenceHistory.DayStatus.ABSENT
+            if notes:
+                row.notes = notes
+            row.auto_generated = False
+            row.save(update_fields=['status', 'notes', 'auto_generated', 'updated_at'])
+
+        return Response(AbsenceHistorySerializer(row).data, status=status.HTTP_200_OK)
