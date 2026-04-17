@@ -43,7 +43,12 @@ class TripListCreateView(generics.ListCreateAPIView):
         'route', 'bus', 'driver', 'second_driver',
     ).prefetch_related('route__stops')
     serializer_class   = TripSerializer
-    permission_classes = [IsAdminOrReadOnly]
+    permission_classes = [IsAuthenticated]
+
+    def get_permissions(self):
+        if self.request.method in ('POST',):
+            return [IsAdmin()]
+        return [IsAuthenticated()]
 
     def get_queryset(self):
         qs     = super().get_queryset()
@@ -76,7 +81,12 @@ class TripDetailView(generics.RetrieveUpdateDestroyAPIView):
         'route', 'bus', 'driver', 'second_driver',
     ).prefetch_related('route__stops')
     serializer_class   = TripSerializer
-    permission_classes = [IsAdminOrReadOnly]
+    permission_classes = [IsAuthenticated]
+
+    def get_permissions(self):
+        if self.request.method in ('PUT', 'PATCH', 'DELETE'):
+            return [IsAdmin()]
+        return [IsAuthenticated()]
 
     def get_queryset(self):
         qs = super().get_queryset()
